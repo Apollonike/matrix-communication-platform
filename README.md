@@ -224,7 +224,7 @@ Internet
    v
 Zusätzlicher oder aufgerüsteter öffentlicher Server
 (SFU für größere Gruppen-Videocalls)
-
+```
 Komponenten und Rollen
 Öffentlicher Server 1
 
