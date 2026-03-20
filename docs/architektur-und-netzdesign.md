@@ -87,239 +87,216 @@ Damit VLAN-getaggter Verkehr korrekt zur VM durchgereicht werden kann, musste di
 
 Erforderliche Bridge-Eigenschaft:
 
-```text
-bridge-vlan-aware yes
+    bridge-vlan-aware yes
 
 Fehlte diese Option, erhielt die VM trotz korrektem VLAN-Tag keine DHCP-Lease und fiel auf APIPA/Link-Local-Adressierung zurück.
 
 Nach Aktivierung von VLAN-awareness und einem späteren Neustart des Proxmox-Hosts wurde die Verbindung korrekt hergestellt.
 
-Switch-Pfad
+---
+
+## Switch-Pfad
 
 Der VLAN-Pfad zwischen pfSense und Proxmox verläuft über zwei Switches:
 
-ein vorgelagerter Kupfer-Switch
-
-ein zusätzlicher GF-/Core-Switch vor dem Proxmox-Host
+- ein vorgelagerter Kupfer-Switch
+- ein zusätzlicher GF-/Core-Switch vor dem Proxmox-Host
 
 Für die erfolgreiche Ende-zu-Ende-Verbindung von VLAN 100 war entscheidend, dass VLAN 100 auf allen beteiligten Ports entlang des Pfads korrekt mitgeführt wird.
 
-Wichtige Erkenntnis
+### Wichtige Erkenntnis
 
-Ein VLAN funktioniert nur dann stabil, wenn es auf jedem beteiligten Link korrekt konfiguriert ist.
+Ein VLAN funktioniert nur dann stabil, wenn es auf **jedem** beteiligten Link korrekt konfiguriert ist.
 
 Insbesondere relevant waren:
 
-Port pfSense → Switch
+- Port pfSense → Switch
+- Uplink zwischen den Switches
+- Port Switch → Proxmox
 
-Uplink zwischen den Switches
+---
 
-Port Switch → Proxmox
-
-GF-Switch-Konfiguration
+## GF-Switch-Konfiguration
 
 Auf dem GF-/Core-Switch wurde VLAN 100 explizit angelegt und den beteiligten Trunk-Ports zugewiesen.
 
-VLAN 100
+### VLAN 100
 
-VLAN 100 wurde als eigenes VLAN erstellt
+- VLAN 100 wurde als eigenes VLAN erstellt
+- relevante Ports wurden als **Tagged** für VLAN 100 konfiguriert
 
-relevante Ports wurden als Tagged für VLAN 100 konfiguriert
-
-Port-Settings
+### Port-Settings
 
 Für die verwendeten Uplink-/Trunk-Ports wurden folgende Parameter verwendet:
 
-Mode: Trunk
-
-PVID: 1
-
-Accept Frame Type: All
-
-Ingress Filtering: Enabled
-
-TPID: 0x8100
+- **Mode:** `Trunk`
+- **PVID:** `1`
+- **Accept Frame Type:** `All`
+- **Ingress Filtering:** `Enabled`
+- **TPID:** `0x8100`
 
 Diese Konfiguration erlaubt:
 
-untagged Standardverkehr im nativen VLAN
+- untagged Standardverkehr im nativen VLAN
+- zusätzlich getaggten Verkehr für VLAN 100
 
-zusätzlich getaggten Verkehr für VLAN 100
+---
 
-Matrix-VM Netzwerkstand
+## Matrix-VM Netzwerkstand
 
 Die Matrix-VM wurde zunächst testweise per DHCP in VLAN 100 eingebunden.
 
 Nach erfolgreicher Fehleranalyse und Stabilisierung wurde die Konnektivität mit statischer Adressierung verifiziert.
 
-Statische Testkonfiguration
-Adresse: 10.100.0.10/24
-Gateway: 10.100.0.1
-DNS:     10.100.0.1, 1.1.1.1
+### Statische Testkonfiguration
+
+    Adresse: 10.100.0.10/24
+    Gateway: 10.100.0.1
+    DNS:     10.100.0.1, 1.1.1.1
 
 Diese Konfiguration wurde erfolgreich getestet.
 
-Ergebnis
+### Ergebnis
 
-Layer 2-Konnektivität zum pfSense-Gateway funktioniert
-
-ARP-Auflösung funktioniert
-
-ICMP zum Gateway funktioniert
-
-DNS-Auflösung funktioniert
+- Layer-2-Konnektivität zum pfSense-Gateway funktioniert
+- ARP-Auflösung funktioniert
+- ICMP zum Gateway funktioniert
+- DNS-Auflösung funktioniert
 
 Anschließend wurde DHCP erneut getestet und funktionierte ebenfalls erfolgreich.
 
-Aktueller erfolgreicher DHCP-Zustand
+### Aktueller erfolgreicher DHCP-Zustand
 
 Die VM erhielt per DHCP eine Adresse aus dem konfigurierten Bereich, zum Beispiel:
 
-10.100.0.103/24
+- `10.100.0.103/24`
 
 sowie:
 
-Gateway über 10.100.0.1
+- Gateway über `10.100.0.1`
+- DNS-Auflösung funktionsfähig
 
-DNS-Auflösung funktionsfähig
+---
 
-DNS in Debian
+## DNS in Debian
 
 In der Debian-VM musste zusätzlich sichergestellt werden, dass die Resolver-Konfiguration korrekt gesetzt ist.
 
 Für den Betrieb wurde als Resolver verwendet:
 
-10.100.0.1
-
-1.1.1.1
+- `10.100.0.1`
+- `1.1.1.1`
 
 Erst nach korrekter Resolver-Konfiguration funktionierte die Namensauflösung erwartungsgemäß.
 
-Fehleranalyse und Troubleshooting
+---
+
+## Fehleranalyse und Troubleshooting
 
 Im Rahmen der Inbetriebnahme wurden mehrere Fehlerursachen systematisch eingegrenzt.
 
-1. Fehlende VLAN-awareness auf Proxmox-Bridge
+### 1. Fehlende VLAN-awareness auf Proxmox-Bridge
 
 Symptom:
 
-VM erhielt keine DHCP-Lease im VLAN 100
-
-stattdessen APIPA-Adresse (169.254.x.x)
+- VM erhielt keine DHCP-Lease im VLAN 100
+- stattdessen APIPA-Adresse (`169.254.x.x`)
 
 Ursache:
 
-verwendete Bridge war nicht VLAN-aware
+- verwendete Bridge war nicht VLAN-aware
 
 Lösung:
 
-bridge-vlan-aware yes
+- `bridge-vlan-aware yes`
+- anschließend Netzwerk neu laden bzw. Proxmox später sauber neu starten
 
-anschließend Netzwerk neu laden bzw. Proxmox später sauber neu starten
-
-2. VLAN 100 auf dem GF-Switch zunächst nicht vorhanden
+### 2. VLAN 100 auf dem GF-Switch zunächst nicht vorhanden
 
 Symptom:
 
-VLAN 100 funktionierte nicht bis zur VM
-
-andere VLANs für WLAN liefen bereits
+- VLAN 100 funktionierte nicht bis zur VM
+- andere VLANs für WLAN liefen bereits
 
 Ursache:
 
-VLAN 100 war auf dem GF-Switch zunächst noch nicht angelegt
+- VLAN 100 war auf dem GF-Switch zunächst noch nicht angelegt
 
 Lösung:
 
-VLAN 100 erstellen
+- VLAN 100 erstellen
+- Trunk-Mitgliedschaft für die beteiligten Ports setzen
 
-Trunk-Mitgliedschaft für die beteiligten Ports setzen
-
-3. Asymmetrisches ARP-/DHCP-Verhalten
+### 3. Asymmetrisches ARP-/DHCP-Verhalten
 
 Zwischenzeitlich zeigte sich ein Zustand, in dem:
 
-DHCP Discover pfSense erreichte
-
-DHCP Offer von pfSense gesendet wurde
-
-ARP Replies von pfSense sichtbar waren
-
-der Gast diese Antworten jedoch nicht sauber verarbeitete
+- DHCP Discover pfSense erreichte
+- DHCP Offer von pfSense gesendet wurde
+- ARP Replies von pfSense sichtbar waren
+- der Gast diese Antworten jedoch nicht sauber verarbeitete
 
 Die Konfiguration wirkte logisch korrekt, der Zustand war jedoch nicht konsistent.
 
 Lösung:
 
-saubere Reinitialisierung
-
-Neustart des Proxmox-Hosts
+- saubere Reinitialisierung
+- Neustart des Proxmox-Hosts
 
 Danach funktionierte die Kommunikation korrekt.
 
-4. DNS-Auflösung im Gast
+### 4. DNS-Auflösung im Gast
 
 Symptom:
 
-IP-Konnektivität vorhanden
-
-Namensauflösung funktionierte nicht
+- IP-Konnektivität vorhanden
+- Namensauflösung funktionierte nicht
 
 Lösung:
 
-Resolver in Debian korrekt setzen
+- Resolver in Debian korrekt setzen
 
-Aktueller Stand
+---
+
+## Aktueller Stand
 
 Die Netzwerkbasis für die Matrix-Plattform ist bis hierhin erfolgreich hergestellt.
 
-Erfolgreich umgesetzt
+### Erfolgreich umgesetzt
 
-separates VLAN für Public Services eingerichtet
+- separates VLAN für Public Services eingerichtet
+- pfSense-Interface `PublicServices` konfiguriert
+- DHCP-Bereich für VLAN 100 eingerichtet
+- Proxmox-Bridge VLAN-aware konfiguriert
+- Matrix-VM mit VLAN-Tag 100 angebunden
+- Switch-Pfad bis Proxmox erfolgreich hergestellt
+- statische und dynamische Adressierung erfolgreich getestet
+- Gateway- und DNS-Erreichbarkeit bestätigt
 
-pfSense-Interface PublicServices konfiguriert
+### Noch offen
 
-DHCP-Bereich für VLAN 100 eingerichtet
+- restriktive Firewall-Regeln für VLAN 100
+- interne DNS-Namensauflösung für die Zielsysteme
+- HAProxy-Veröffentlichung für Matrix
+- Installation von PostgreSQL und Synapse
+- spätere Einbindung von Coturn
+- spätere Einbindung weiterer Public-Services-Systeme wie Web und Mail
 
-Proxmox-Bridge VLAN-aware konfiguriert
+---
 
-Matrix-VM mit VLAN-Tag 100 angebunden
-
-Switch-Pfad bis Proxmox erfolgreich hergestellt
-
-statische und dynamische Adressierung erfolgreich getestet
-
-Gateway- und DNS-Erreichbarkeit bestätigt
-
-Noch offen
-
-restriktive Firewall-Regeln für VLAN 100
-
-interne DNS-Namensauflösung für die Zielsysteme
-
-HAProxy-Veröffentlichung für Matrix
-
-Installation von PostgreSQL und Synapse
-
-spätere Einbindung von Coturn
-
-spätere Einbindung weiterer Public-Services-Systeme wie Web und Mail
-
-Nächste Schritte
+## Nächste Schritte
 
 Die logischen nächsten Arbeitspunkte sind:
 
-Firewall-Regelwerk für PublicServices definieren
+1. Firewall-Regelwerk für `PublicServices` definieren
+2. feste Adress- und Namensstruktur für Matrix, Web und Mail festlegen
+3. Debian-Basishärtung abschließen
+4. Matrix-Serverkomponente installieren
+5. Veröffentlichung über HAProxy vorbereiten
 
-feste Adress- und Namensstruktur für Matrix, Web und Mail festlegen
+---
 
-Debian-Basishärtung abschließen
-
-Matrix-Serverkomponente installieren
-
-Veröffentlichung über HAProxy vorbereiten
-
-Zusammenfassung
+## Zusammenfassung
 
 Mit VLAN 100 wurde eine eigene Public-Services-Zone aufgebaut, in der die Matrix-Plattform sicherheitsorientiert und getrennt vom Standard-LAN betrieben werden kann.
 
