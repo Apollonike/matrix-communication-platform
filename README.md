@@ -200,6 +200,9 @@ pfSense
 (HAProxy / Firewall / Routing)
    |
    v
+DMZ / Server-Segment
+   |
+   v
 Proxmox VE
    |
    v
@@ -221,6 +224,7 @@ Internet
    v
 Zusätzlicher oder aufgerüsteter öffentlicher Server
 (SFU für größere Gruppen-Videocalls)
+
 Komponenten und Rollen
 Öffentlicher Server 1
 
@@ -228,73 +232,85 @@ Dieser Server ist bereits vorhanden und bleibt bewusst minimal.
 
 Aufgabe
 
-öffentliche IPv4-/IPv6-Erreichbarkeit
+    öffentliche IPv4-/IPv6-Erreichbarkeit
 
-WireGuard-Endpunkt
+    WireGuard-Endpunkt
 
-definierte Portweiterleitung in Richtung pfSense
+    definierte Portweiterleitung in Richtung pfSense
 
-keine Matrix-Anwendungsdienste
+    keine Matrix-Anwendungsdienste
 
-keine Datenbank
+    keine Datenbank
 
-kein TURN
+    kein TURN
 
-keine SFU
+    keine SFU
 
 Begründung
 
 Der Server stellt ausschließlich die öffentliche Eintrittskante bereit. Dadurch bleibt der exponierte Internet-Host übersichtlich, wartungsarm und klar abgegrenzt.
-
 pfSense
 
 pfSense bildet die zentrale Übergabe- und Sicherheitskomponente zwischen öffentlicher Eintrittskante und interner Infrastruktur.
 
 Aufgabe
 
-Annahme des über den Tunnel weitergeleiteten Datenverkehrs
+    Annahme des über den Tunnel weitergeleiteten Datenverkehrs
 
-Firewall- und Freigabelogik
+    Firewall- und Freigabelogik
 
-Routing in die interne Infrastruktur
+    Routing in die interne Infrastruktur
 
-Betrieb von HAProxy als zentrale Reverse-Proxy- und Veröffentlichungskomponente
+    Betrieb von HAProxy als zentrale Reverse-Proxy- und Veröffentlichungskomponente
 
 Begründung
 
 pfSense bleibt die zentrale Kontrollinstanz für eingehende Verbindungen und Sicherheitsrichtlinien. Durch die Integration von HAProxy kann die Veröffentlichung interner Dienste konsistent, nachvollziehbar und kontrolliert umgesetzt werden.
-
 HAProxy auf pfSense
 
 HAProxy ist Teil der aktiven Veröffentlichungsarchitektur dieses Projekts.
 
 Aufgabe
 
-zentrale HTTPS-Veröffentlichung über Port 443
+    zentrale HTTPS-Veröffentlichung über Port 443
 
-Hostname- bzw. SNI-basierte Weiterleitung an interne Backends
+    Hostname- bzw. SNI-basierte Weiterleitung an interne Backends
 
-Abbildung öffentlicher DNS-Namen auf interne Dienste
+    Abbildung öffentlicher DNS-Namen auf interne Dienste
 
-gemeinsame Nutzung von Port 443 durch mehrere Dienste
+    gemeinsame Nutzung von Port 443 durch mehrere Dienste
 
-klare Trennung zwischen externer Adresse und internem Service-Backend
+    klare Trennung zwischen externer Adresse und internem Service-Backend
 
 Begründung
 
 Die Matrix-Plattform soll Port 443 nicht exklusiv belegen. Stattdessen wird HAProxy als zentrale Veröffentlichungsschicht genutzt, sodass HTTPS-Dienste unterschiedlicher Art parallel unter verschiedenen Hostnamen auf Basis derselben öffentlichen Adresse bereitgestellt werden können.
+DMZ / Server-Segment
 
+Die Matrix-Serverkomponente soll nicht im normalen internen Client- oder Administrationsnetz betrieben werden.
+
+Aufgabe
+
+    separates Segment für exponierte oder öffentlich erreichbare Dienste
+
+    logische Trennung von Kernsystemen und Internet-nahen Anwendungen
+
+    Begrenzung möglicher Seitwärtsbewegungen bei einer Kompromittierung
+
+Begründung
+
+Ein professionelles Sicherheitsdesign geht davon aus, dass ein öffentlich erreichbarer Dienst grundsätzlich angreifbar ist. Die Segmentierung reduziert den möglichen Schadensradius und verhindert, dass eine Kompromittierung der Matrix-VM automatisch Zugriff auf interne Kernsysteme ermöglicht.
 Proxmox VE
 
 Proxmox VE stellt die Virtualisierungsplattform für die zentrale Kommunikationsinfrastruktur bereit.
 
 Aufgabe
 
-Hosting der Debian-VM
+    Hosting der Debian-VM
 
-Integration in Snapshot- und Backup-Konzepte
+    Integration in Snapshot- und Backup-Konzepte
 
-Grundlage für spätere Skalierung oder Migration
+    Grundlage für spätere Skalierung oder Migration
 
 Debian-VM
 
@@ -302,52 +318,50 @@ Die Debian-VM ist der zentrale Anwendungshost der Plattform.
 
 Enthaltene Dienste
 
-Matrix-Serverkomponente
+    Matrix-Serverkomponente
 
-PostgreSQL
+    PostgreSQL
 
 Aufgabe
 
-Benutzer- und Raumverwaltung
+    Benutzer- und Raumverwaltung
 
-Nachrichtenverarbeitung
+    Nachrichtenverarbeitung
 
-Speicherung von Konfigurations- und Zustandsdaten
+    Speicherung von Konfigurations- und Zustandsdaten
 
-Medienbereitstellung
+    Medienbereitstellung
 
-Client-Synchronisation
+    Client-Synchronisation
 
-optionale Föderation
+    optionale Föderation
 
-Aufnahme und Verteilung technischer Benachrichtigungen
+    Aufnahme und Verteilung technischer Benachrichtigungen
 
 Begründung
 
 Für kleine bis mittlere Umgebungen bietet diese Bündelung eine gute Balance aus Übersichtlichkeit, Wartbarkeit und technischer Sauberkeit.
-
 Öffentlicher Server 2
 
 Dieser zweite öffentliche Server ist für TURN/STUN vorgesehen.
 
 Enthaltener Dienst
 
-Coturn
+    Coturn
 
 Aufgabe
 
-Bereitstellung von STUN
+    Bereitstellung von STUN
 
-Bereitstellung von TURN-Relay-Funktionalität
+    Bereitstellung von TURN-Relay-Funktionalität
 
-Unterstützung für Audio- und Videocalls bei schwierigen NAT-/Firewall-Szenarien
+    Unterstützung für Audio- und Videocalls bei schwierigen NAT-/Firewall-Szenarien
 
-direkt erreichbarer öffentlicher Medien-Relay-Endpunkt
+    direkt erreichbarer öffentlicher Medien-Relay-Endpunkt
 
 Begründung
 
 TURN ist auf einem direkt öffentlich erreichbaren System architektonisch deutlich sauberer platziert als hinter mehreren NAT-, Tunnel- und Firewall-Ebenen.
-
 Optionale spätere SFU
 
 Eine SFU ist nicht Bestandteil der ersten Zielstufe.
@@ -356,263 +370,372 @@ Relevanz
 
 Eine SFU wird erst sinnvoll, wenn:
 
-Gruppen-Videocalls regelmäßig genutzt werden
+    Gruppen-Videocalls regelmäßig genutzt werden
 
-mehr gleichzeitige Teilnehmer unterstützt werden sollen
+    mehr gleichzeitige Teilnehmer unterstützt werden sollen
 
-die Skalierung von Echtzeit-Medien zum echten Betriebsfaktor wird
+    die Skalierung von Echtzeit-Medien zum echten Betriebsfaktor wird
 
 Mögliche Bereitstellung
 
-auf einem aufgerüsteten öffentlichen Server
+    auf einem aufgerüsteten öffentlichen Server
 
-auf einem zusätzlichen dedizierten System
+    auf einem zusätzlichen dedizierten System
 
-als eigene Ausbaustufe mit höherer Rechenleistung
+    als eigene Ausbaustufe mit höherer Rechenleistung
 
 Begründung
 
 Die SFU ist eine eigenständige Medienverteil-Komponente und sollte bewusst als spätere Erweiterung betrachtet werden, nicht als Pflichtbestandteil des initialen Plattformaufbaus.
+Sicherheitsarchitektur
 
+Die externe Erreichbarkeit der Matrix-Plattform wird bewusst nicht mit einer direkten Vertrauensstellung gegenüber dem internen Netzwerk gleichgesetzt. Die Architektur folgt dem Grundsatz, dass ein öffentlich erreichbarer Dienst grundsätzlich als potenziell angreifbar betrachtet werden muss. Ziel ist daher nicht nur die sichere Bereitstellung des Dienstes, sondern vor allem die Begrenzung des Schadens im Fall einer Kompromittierung.
+Sicherheitsprinzip
+
+Die Sicherheitsarchitektur orientiert sich an folgenden Grundsätzen:
+
+    keine implizite Vertrauensannahme aufgrund des Netzstandorts
+
+    Segmentierung öffentlich erreichbarer Dienste
+
+    minimale und explizit definierte Netzwerkfreigaben
+
+    kontrollierte Veröffentlichung über zentrale Proxy- und Firewall-Komponenten
+
+    Begrenzung möglicher Seitwärtsbewegungen im internen Netz
+
+    gezielte statt offener Benutzerregistrierung
+
+Netzwerksegmentierung
+
+Die Matrix-Serverkomponente sollte nicht im normalen internen Client- oder Administrationsnetz betrieben werden. Stattdessen wird ein separates Server- oder DMZ-Segment empfohlen, in dem ausschließlich öffentlich erreichbare oder besonders exponierte Dienste betrieben werden.
+
+Dadurch gilt:
+
+    eine Kompromittierung der Matrix-VM führt nicht automatisch zu direktem Zugriff auf interne Kernsysteme
+
+    Proxmox-Management, Backup-Systeme, Admin-Clients, Storage-Systeme und weitere sensible Komponenten bleiben logisch getrennt
+
+    Zugriffe aus dem Matrix-Segment in andere interne Netzbereiche werden nur explizit und restriktiv erlaubt
+
+Kontrollierte Veröffentlichung über HAProxy
+
+Die Veröffentlichung der Plattform erfolgt nicht durch direkte Freigabe der Matrix-VM ins Internet, sondern kontrolliert über HAProxy auf pfSense.
+
+Dabei übernimmt HAProxy insbesondere:
+
+    zentrale HTTPS-Veröffentlichung
+
+    Hostname- bzw. SNI-basierte Weiterleitung
+
+    kontrollierte Abbildung externer DNS-Namen auf interne Backends
+
+    gemeinsame Nutzung von Port 443 für mehrere HTTPS-Dienste
+
+    zentrale Protokollierung und nachvollziehbare Veröffentlichungspfade
+
+Die Matrix-Plattform belegt Port 443 dabei nicht exklusiv, sondern wird als einer von mehreren Diensten kontrolliert über die Proxy-Schicht veröffentlicht.
+Restriktive Firewall-Politik
+
+Die Firewall-Regeln sollten nach dem Default-Deny-Prinzip aufgebaut werden. Erlaubt wird nur der tatsächlich notwendige Verkehr.
+
+Für die Matrix-Plattform bedeutet das insbesondere:
+
+    eingehender Verkehr nur über die definierte Veröffentlichungskette
+
+    Zugriff auf das Matrix-Backend nur über die vorgesehenen Proxy- oder Routing-Pfade
+
+    keine pauschalen Freigaben vom Matrix-Segment in interne Vertrauenszonen
+
+    Administrationszugriffe nur aus definierten Management-Netzen oder über VPN
+
+    ausgehende Verbindungen der Matrix-VM ebenfalls nur so weit wie betrieblich erforderlich
+
+Begrenzung der Seitwärtsbewegung
+
+Ein professionelles Design geht davon aus, dass ein Dienst im schlimmsten Fall kompromittiert werden kann. Entscheidend ist daher, welche weiteren Systeme von dort aus erreichbar sind.
+
+Die Matrix-VM sollte deshalb nicht frei auf interne Infrastruktur zugreifen können. Insbesondere sollte kein unkontrollierter Zugriff auf folgende Bereiche bestehen:
+
+    Hypervisor-Management
+
+    Backup-Infrastruktur
+
+    Storage-Systeme
+
+    Administrationssysteme
+
+    weitere interne Kernsysteme
+
+Damit wird der mögliche Schadensradius im Fall einer Kompromittierung deutlich reduziert.
+Sichere Benutzerverwaltung
+
+Die Plattform ist nicht für offene Selbstregistrierung vorgesehen. Benutzerkonten sollen bewusst und kontrolliert angelegt werden. Falls Registrierungsprozesse später erweitert werden, sollten diese ebenfalls kontrolliert, nachvollziehbar und möglichst token- oder administrativ gesteuert erfolgen.
+Administrationsschnittstellen
+
+Administrationsfunktionen und administrative Endpunkte der Matrix-Plattform dürfen nicht unnötig öffentlich exponiert werden. Administrative Zugriffe sollten nur über definierte und abgesicherte Managementpfade erfolgen.
+Sicherheitsziel dieser Architektur
+
+Die Sicherheitsarchitektur verfolgt nicht den unrealistischen Anspruch, einen öffentlich erreichbaren Dienst absolut unangreifbar zu machen. Ziel ist vielmehr ein professioneller Aufbau, bei dem:
+
+    die Angriffsfläche reduziert wird
+
+    Freigaben nachvollziehbar bleiben
+
+    exponierte Dienste logisch getrennt betrieben werden
+
+    ein erfolgreicher Angriff nicht automatisch zur Kompromittierung des internen Netzwerks führt
+
+Damit wird die Matrix Communication Platform nicht nur funktional, sondern auch sicherheitsarchitektonisch als professionell geplante Infrastrukturkomponente positioniert.
 Funktionale Schichten
 Messaging-Schicht
 
 Abgedeckt durch:
 
-Matrix-Serverkomponente
+    Matrix-Serverkomponente
 
-PostgreSQL
+    PostgreSQL
 
 Aufgaben
 
-Benutzerverwaltung
+    Benutzerverwaltung
 
-Raumverwaltung
+    Raumverwaltung
 
-Nachrichtenübermittlung
+    Nachrichtenübermittlung
 
-Event-Speicherung
+    Event-Speicherung
 
-Medien-Metadaten
+    Medien-Metadaten
 
-Synchronisation der Clients
+    Synchronisation der Clients
 
-optionale Föderationslogik
+    optionale Föderationslogik
 
 Veröffentlichungs-Schicht
 
 Abgedeckt durch:
 
-öffentlicher Server 1
+    öffentlicher Server 1
 
-pfSense
+    pfSense
 
-HAProxy
+    HAProxy
 
 Aufgaben
 
-kontrollierte Veröffentlichung interner Dienste
+    kontrollierte Veröffentlichung interner Dienste
 
-externe Erreichbarkeit über hive42.de
+    externe Erreichbarkeit über hive42.de
 
-zentrale Proxy- und Routing-Logik
+    zentrale Proxy- und Routing-Logik
 
-Trennung von öffentlichem Zugriff und internem Backend
+    Trennung von öffentlichem Zugriff und internem Backend
 
-gemeinsame Nutzung von Port 443 für mehrere HTTPS-Dienste
+    gemeinsame Nutzung von Port 443 für mehrere HTTPS-Dienste
 
 Medien-Relay-Schicht
 
 Abgedeckt durch:
 
-Coturn
+    Coturn
 
 Aufgaben
 
-STUN-Unterstützung
+    STUN-Unterstützung
 
-TURN-Relay für problematische Netzpfade
+    TURN-Relay für problematische Netzpfade
 
-Verbesserung der Erreichbarkeit und Stabilität bei Audio- und Videocalls
+    Verbesserung der Erreichbarkeit und Stabilität bei Audio- und Videocalls
 
 Benachrichtigungs-Schicht
 
 Abgedeckt durch:
 
-Monitoring- und Infrastruktursysteme
+    Monitoring- und Infrastruktursysteme
 
-Schnittstellen oder Benachrichtigungsmechanismen in Richtung Matrix
+    Schnittstellen oder Benachrichtigungsmechanismen in Richtung Matrix
 
 Aufgaben
 
-Übermittlung technischer Statusmeldungen
+    Übermittlung technischer Statusmeldungen
 
-Transport von Alarmierungen und Ereignissen
+    Transport von Alarmierungen und Ereignissen
 
-Integration von Infrastruktur-Benachrichtigungen in bestehende Kommunikationsräume
+    Integration von Infrastruktur-Benachrichtigungen in bestehende Kommunikationsräume
 
 Zukünftige Konferenz-Schicht
 
 Abgedeckt durch:
 
-optionale SFU
+    optionale SFU
 
 Aufgaben
 
-effiziente Verteilung von Medienströmen in Gruppencalls
+    effiziente Verteilung von Medienströmen in Gruppencalls
 
-bessere Skalierung bei mehreren aktiven Video-Teilnehmern
+    bessere Skalierung bei mehreren aktiven Video-Teilnehmern
 
-geringere Last auf Endgeräten im Vergleich zu einfachen Mesh-Ansätzen
+    geringere Last auf Endgeräten im Vergleich zu einfachen Mesh-Ansätzen
 
 Warum diese Architektur gewählt wurde
 1. Betriebshoheit über die zentrale Plattform
 
 Die Kernkomponenten verbleiben in der eigenen Infrastruktur und unter eigener Kontrolle.
-
 2. Nutzung bestehender Netzarchitektur
 
 Die vorhandene Kombination aus öffentlichem Linux-Server, WireGuard, pfSense und HAProxy wird sinnvoll weiterverwendet.
-
 3. Klare Trennung technischer Rollen
 
 Öffentliche Eintrittskante, Proxy-Schicht, Plattformlogik, Medien-Relay und Benachrichtigungsintegration sind voneinander getrennt.
-
 4. Saubere Erweiterbarkeit
 
 Die Architektur erlaubt spätere Ausbaustufen ohne grundlegenden Neuentwurf.
-
 5. Datenschutz und sichere Kommunikation als Leitmotiv
 
 Das Projekt adressiert nicht nur technische Betriebsfragen, sondern verfolgt bewusst das Ziel, Kommunikation und technische Benachrichtigungen in einer kontrollierbaren, verschlüsselbaren und unabhängig betreibbaren Plattform zusammenzuführen.
+6. Sicherheit als eigener Architekturbaustein
 
+Die Plattform wird nicht nur funktional, sondern auch mit Blick auf Angriffsfläche, Segmentierung, Freigabelogik und Schadensbegrenzung geplant. Damit wird sie als professionell entworfene Infrastrukturkomponente und nicht als bloß veröffentlichter Einzelservice behandelt.
 Milestones
 Milestone 1 – Architektur und Zielbild definieren
 
-fachliche Zielsetzung festlegen
+    fachliche Zielsetzung festlegen
 
-Datenschutz, sichere Kommunikation und Benachrichtigung als Kernziele definieren
+    Datenschutz, sichere Kommunikation und Benachrichtigung als Kernziele definieren
 
-Rollen von Matrix-Serverkomponente, Coturn, HAProxy und optionaler SFU festlegen
+    Rollen von Matrix-Serverkomponente, Coturn, HAProxy und optionaler SFU festlegen
 
-Namens- und Veröffentlichungsstrategie auf Basis von hive42.de definieren
+    Namens- und Veröffentlichungsstrategie auf Basis von hive42.de definieren
 
-Milestone 2 – Veröffentlichungsarchitektur vorbereiten
+Milestone 2 – Sicherheits- und Veröffentlichungsarchitektur festlegen
 
-DNS-Konzept für hive42.de festlegen
+    DMZ-/Server-Segment für exponierte Dienste definieren
 
-HAProxy auf pfSense in die Zielarchitektur einbinden
+    DNS-Konzept für hive42.de festlegen
 
-Routing über öffentlichen Server 1, WireGuard und pfSense dokumentieren
+    HAProxy auf pfSense in die Zielarchitektur einbinden
 
-externe Hostnamen den internen Diensten zuordnen
+    Routing über öffentlichen Server 1, WireGuard und pfSense dokumentieren
 
-gemeinsame Nutzung von Port 443 für mehrere HTTPS-Dienste sicherstellen
+    externe Hostnamen den internen Diensten zuordnen
+
+    gemeinsame Nutzung von Port 443 für mehrere HTTPS-Dienste sicherstellen
+
+    restriktive Firewall- und Freigabelogik definieren
 
 Milestone 3 – Zentrale Matrix-Plattform bereitstellen
 
-Debian-VM auf Proxmox VE bereitstellen
+    Debian-VM auf Proxmox VE bereitstellen
 
-Matrix-Serverkomponente und PostgreSQL integrieren
+    Matrix-Serverkomponente und PostgreSQL integrieren
 
-interne Erreichbarkeit und Basisbetrieb herstellen
+    interne Erreichbarkeit und Basisbetrieb herstellen
 
-Veröffentlichung über HAProxy vorbereiten oder aktivieren
+    Veröffentlichung über HAProxy vorbereiten oder aktivieren
+
+    kontrollierte Benutzeranlage und Registrierungsstrategie festlegen
 
 Milestone 4 – TURN für Echtzeitkommunikation ergänzen
 
-öffentlichen Server 2 für Coturn vorsehen
+    öffentlichen Server 2 für Coturn vorsehen
 
-STUN/TURN in die Kommunikationsarchitektur einbinden
+    STUN/TURN in die Kommunikationsarchitektur einbinden
 
-Grundlage für Audioanrufe und kleine Videocalls schaffen
+    Grundlage für Audioanrufe und kleine Videocalls schaffen
 
 Milestone 5 – Benachrichtigungsintegration vorbereiten
 
-Matrix als Kanal für Status- und Alarmmeldungen vorsehen
+    Matrix als Kanal für Status- und Alarmmeldungen vorsehen
 
-mögliche Quellen wie Checkmk und pfSense konzeptionell einbinden
+    mögliche Quellen wie Checkmk und pfSense konzeptionell einbinden
 
-Struktur für technische Räume oder Alarmierungsräume definieren
+    Struktur für technische Räume oder Alarmierungsräume definieren
 
 Milestone 6 – Erweiterbarkeit für spätere Konferenzfunktionen sichern
 
-SFU als optionale spätere Ausbaustufe dokumentieren
+    SFU als optionale spätere Ausbaustufe dokumentieren
 
-Architektur so auslegen, dass größere Echtzeit-Medienkomponenten später ausgelagert werden können
+    Architektur so auslegen, dass größere Echtzeit-Medienkomponenten später ausgelagert werden können
 
 DNS- und Namenskonzept
 
 Die öffentliche Basisdomain des Projekts ist:
 
-hive42.de
+    hive42.de
 
 Die Veröffentlichung erfolgt hostnamenbasiert über HAProxy auf pfSense. Dadurch bleibt Port 443 als gemeinsamer HTTPS-Einstiegspunkt für mehrere Dienste nutzbar.
 
 Beispielhafte Zuordnung:
 
-matrix.hive42.de → Matrix-Plattform
+    matrix.hive42.de → Matrix-Plattform
 
-call.hive42.de oder sfu.hive42.de → spätere SFU
+    call.hive42.de oder sfu.hive42.de → spätere SFU
 
-weitere Subdomains → weitere interne HTTPS-Dienste
+    weitere Subdomains → weitere interne HTTPS-Dienste
 
 Dieses Modell verhindert, dass die Matrix-Plattform den HTTPS-Port global exklusiv belegt, und ermöglicht eine saubere parallele Veröffentlichung mehrerer Dienste unter derselben öffentlichen Domainbasis.
-
 Empfohlene Sicherheitsausrichtung
 
 Für die erste Ausbaustufe wird empfohlen:
 
-zunächst kontrollierter Betrieb
+    zunächst kontrollierter Betrieb
 
-Benutzerkonten nur gezielt anlegen
+    Benutzerkonten nur gezielt anlegen
 
-Föderation erst aktivieren, wenn die Kernplattform stabil läuft
+    offene Selbstregistrierung deaktiviert lassen
 
-alle externen Freigaben dokumentieren
+    Föderation erst aktivieren, wenn die Kernplattform stabil läuft
 
-Konfiguration, Datenbank und Medienbestand regelmäßig sichern
+    alle externen Freigaben dokumentieren
 
-Benachrichtigungsquellen gezielt und nachvollziehbar anbinden
+    Konfiguration, Datenbank und Medienbestand regelmäßig sichern
+
+    Benachrichtigungsquellen gezielt und nachvollziehbar anbinden
+
+    administrative Zugriffe nur über definierte Managementpfade zulassen
 
 Weiterführende Dokumentation
 
 Ergänzende technische Details zu Architektur, Netzdesign, Sicherheitsbetrachtung und späteren Ausbaustufen werden in wenigen, bewusst zusammengefassten Dokumenten im Verzeichnis docs/ beschrieben.
-
 Fazit
 
 Diese Architektur beschreibt einen sauberen, modularen und professionell nachvollziehbaren Ansatz für den Aufbau einer selbst betriebenen Matrix-basierten Kommunikationsplattform in einer virtualisierten Infrastruktur.
 
 Sie ist besonders geeignet, wenn:
 
-die zentrale Plattform in der eigenen Umgebung betrieben werden soll
+    die zentrale Plattform in der eigenen Umgebung betrieben werden soll
 
-die externe Erreichbarkeit über einen bestehenden WireGuard-gestützten Internet-Einstieg erfolgt
+    die externe Erreichbarkeit über einen bestehenden WireGuard-gestützten Internet-Einstieg erfolgt
 
-HAProxy auf pfSense als kontrollierte Veröffentlichungsschicht genutzt wird
+    HAProxy auf pfSense als kontrollierte Veröffentlichungsschicht genutzt wird
 
-TURN auf einem separaten öffentlichen Host bereitgestellt werden soll
+    TURN auf einem separaten öffentlichen Host bereitgestellt werden soll
 
-Audioanrufe und kleine Videocalls früh unterstützt werden sollen
+    Audioanrufe und kleine Videocalls früh unterstützt werden sollen
 
-technische Benachrichtigungen sicher und kontrolliert über dieselbe Plattform transportiert werden sollen
+    technische Benachrichtigungen sicher und kontrolliert über dieselbe Plattform transportiert werden sollen
 
-größere Konferenzfunktionen erst später relevant werden
+    größere Konferenzfunktionen erst später relevant werden
+
+    öffentlich erreichbare Dienste bewusst segmentiert und restriktiv eingebunden werden sollen
 
 Kurz zusammengefasst:
 
-die zentrale Matrix-Plattform bleibt in der eigenen Infrastruktur
+    die zentrale Matrix-Plattform bleibt in der eigenen Infrastruktur
 
-die Veröffentlichung erfolgt kontrolliert über pfSense und HAProxy
+    die Veröffentlichung erfolgt kontrolliert über pfSense und HAProxy
 
-Port 443 bleibt als gemeinsamer HTTPS-Einstiegspunkt für mehrere Dienste nutzbar
+    Port 443 bleibt als gemeinsamer HTTPS-Einstiegspunkt für mehrere Dienste nutzbar
 
-der öffentliche Weiterleitungsserver bleibt bewusst minimal
+    der öffentliche Weiterleitungsserver bleibt bewusst minimal
 
-Coturn erhält einen separaten öffentlichen Host
+    Coturn erhält einen separaten öffentlichen Host
 
-Benutzerkommunikation und Systembenachrichtigungen werden auf einer gemeinsamen Plattform zusammengeführt
+    Benutzerkommunikation und Systembenachrichtigungen werden auf einer gemeinsamen Plattform zusammengeführt
 
-eine SFU wird erst bei tatsächlichem Bedarf ergänzt
+    die Matrix-VM wird sicherheitsorientiert segmentiert betrieben
+
+    eine SFU wird erst bei tatsächlichem Bedarf ergänzt
 
 Damit entsteht eine robuste, klar dokumentierbare und professionell erweiterbare Kommunikationsplattform für kleine Arbeitsgruppen, technische Projektumgebungen und datenschutzorientierte Infrastruktur-Szenarien.
