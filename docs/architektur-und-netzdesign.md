@@ -28,8 +28,8 @@ Ziele dieser Trennung sind:
 
 Für öffentlich erreichbare Dienste wurde ein eigenes VLAN eingerichtet:
 
-- **VLAN-ID:** `100`
-- **Bezeichnung:** `PublicServices`
+- **VLAN-ID:** 100
+- **Bezeichnung:** PublicServices
 
 Dieses Segment ist für Systeme vorgesehen, die später direkt oder indirekt aus dem Internet erreichbar sein sollen, darunter:
 
@@ -45,20 +45,20 @@ Auf pfSense wurde VLAN 100 auf dem internen LAN-Uplink erstellt und einem eigene
 
 ### Interface
 
-- **Interface-Name:** `PublicServices`
-- **Parent-Interface:** `igc1`
-- **VLAN-Interface:** `igc1.100`
+- **Interface-Name:** PublicServices
+- **Parent-Interface:** igc1
+- **VLAN-Interface:** igc1.100
 
 ### IPv4-Konfiguration
 
-- **IPv4-Adresse:** `10.100.0.1/24`
+- **IPv4-Adresse:** 10.100.0.1/24
 
 ### DHCP
 
-Für das Interface `PublicServices` wurde ein DHCP-Bereich eingerichtet.
+Für das Interface PublicServices wurde ein DHCP-Bereich eingerichtet.
 
-- **Subnetz:** `10.100.0.0/24`
-- **DHCP-Range:** `10.100.0.100 - 10.100.0.150`
+- **Subnetz:** 10.100.0.0/24
+- **DHCP-Range:** 10.100.0.100 - 10.100.0.150
 
 Der DHCP-Dienst auf pfSense wurde erfolgreich verifiziert.
 
@@ -70,24 +70,24 @@ Die Matrix-VM wird auf Proxmox VE betrieben.
 
 ### VM
 
-- **VM-Name:** `matrix`
+- **VM-Name:** matrix
 - **Gastbetriebssystem:** Debian 13
-- **Netzwerkinterface in der VM:** `ens18`
+- **Netzwerkinterface in der VM:** ens18
 
 ### Virtuelle Netzwerkkarte
 
 Die VM-Netzwerkkarte ist auf der Proxmox-Seite wie folgt konfiguriert:
 
-- **Bridge:** `vmbr0`
-- **VLAN-Tag:** `100`
+- **Bridge:** vmbr0
+- **VLAN-Tag:** 100
 
 ### Wichtiger Punkt: VLAN-aware Bridge
 
 Damit VLAN-getaggter Verkehr korrekt zur VM durchgereicht werden kann, musste die verwendete Linux-Bridge auf Proxmox VLAN-aware konfiguriert werden.
 
-Erforderliche Bridge-Eigenschaft:
+**Erforderliche Bridge-Eigenschaft**
 
-    bridge-vlan-aware yes
+bridge-vlan-aware yes
 
 Fehlte diese Option, erhielt die VM trotz korrektem VLAN-Tag keine DHCP-Lease und fiel auf APIPA/Link-Local-Adressierung zurück.
 
@@ -129,11 +129,11 @@ Auf dem GF-/Core-Switch wurde VLAN 100 explizit angelegt und den beteiligten Tru
 
 Für die verwendeten Uplink-/Trunk-Ports wurden folgende Parameter verwendet:
 
-- **Mode:** `Trunk`
-- **PVID:** `1`
-- **Accept Frame Type:** `All`
-- **Ingress Filtering:** `Enabled`
-- **TPID:** `0x8100`
+- **Mode:** Trunk
+- **PVID:** 1
+- **Accept Frame Type:** All
+- **Ingress Filtering:** Enabled
+- **TPID:** 0x8100
 
 Diese Konfiguration erlaubt:
 
@@ -150,9 +150,9 @@ Nach erfolgreicher Fehleranalyse und Stabilisierung wurde die Konnektivität mit
 
 ### Statische Testkonfiguration
 
-    Adresse: 10.100.0.10/24
-    Gateway: 10.100.0.1
-    DNS:     10.100.0.1, 1.1.1.1
+**Adresse:** 10.100.0.10/24  
+**Gateway:** 10.100.0.1  
+**DNS:** 10.100.0.1, 1.1.1.1
 
 Diese Konfiguration wurde erfolgreich getestet.
 
@@ -169,11 +169,11 @@ Anschließend wurde DHCP erneut getestet und funktionierte ebenfalls erfolgreich
 
 Die VM erhielt per DHCP eine Adresse aus dem konfigurierten Bereich, zum Beispiel:
 
-- `10.100.0.103/24`
+- 10.100.0.103/24
 
 sowie:
 
-- Gateway über `10.100.0.1`
+- Gateway über 10.100.0.1
 - DNS-Auflösung funktionsfähig
 
 ---
@@ -184,8 +184,8 @@ In der Debian-VM musste zusätzlich sichergestellt werden, dass die Resolver-Kon
 
 Für den Betrieb wurde als Resolver verwendet:
 
-- `10.100.0.1`
-- `1.1.1.1`
+- 10.100.0.1
+- 1.1.1.1
 
 Erst nach korrekter Resolver-Konfiguration funktionierte die Namensauflösung erwartungsgemäß.
 
@@ -197,32 +197,32 @@ Im Rahmen der Inbetriebnahme wurden mehrere Fehlerursachen systematisch eingegre
 
 ### 1. Fehlende VLAN-awareness auf Proxmox-Bridge
 
-Symptom:
+**Symptom**
 
 - VM erhielt keine DHCP-Lease im VLAN 100
-- stattdessen APIPA-Adresse (`169.254.x.x`)
+- stattdessen APIPA-Adresse (169.254.x.x)
 
-Ursache:
+**Ursache**
 
 - verwendete Bridge war nicht VLAN-aware
 
-Lösung:
+**Lösung**
 
-- `bridge-vlan-aware yes`
+- bridge-vlan-aware yes
 - anschließend Netzwerk neu laden bzw. Proxmox später sauber neu starten
 
 ### 2. VLAN 100 auf dem GF-Switch zunächst nicht vorhanden
 
-Symptom:
+**Symptom**
 
 - VLAN 100 funktionierte nicht bis zur VM
 - andere VLANs für WLAN liefen bereits
 
-Ursache:
+**Ursache**
 
 - VLAN 100 war auf dem GF-Switch zunächst noch nicht angelegt
 
-Lösung:
+**Lösung**
 
 - VLAN 100 erstellen
 - Trunk-Mitgliedschaft für die beteiligten Ports setzen
@@ -238,7 +238,7 @@ Zwischenzeitlich zeigte sich ein Zustand, in dem:
 
 Die Konfiguration wirkte logisch korrekt, der Zustand war jedoch nicht konsistent.
 
-Lösung:
+**Lösung**
 
 - saubere Reinitialisierung
 - Neustart des Proxmox-Hosts
@@ -247,12 +247,12 @@ Danach funktionierte die Kommunikation korrekt.
 
 ### 4. DNS-Auflösung im Gast
 
-Symptom:
+**Symptom**
 
 - IP-Konnektivität vorhanden
 - Namensauflösung funktionierte nicht
 
-Lösung:
+**Lösung**
 
 - Resolver in Debian korrekt setzen
 
@@ -265,7 +265,7 @@ Die Netzwerkbasis für die Matrix-Plattform ist bis hierhin erfolgreich hergeste
 ### Erfolgreich umgesetzt
 
 - separates VLAN für Public Services eingerichtet
-- pfSense-Interface `PublicServices` konfiguriert
+- pfSense-Interface PublicServices konfiguriert
 - DHCP-Bereich für VLAN 100 eingerichtet
 - Proxmox-Bridge VLAN-aware konfiguriert
 - Matrix-VM mit VLAN-Tag 100 angebunden
@@ -288,7 +288,7 @@ Die Netzwerkbasis für die Matrix-Plattform ist bis hierhin erfolgreich hergeste
 
 Die logischen nächsten Arbeitspunkte sind:
 
-1. Firewall-Regelwerk für `PublicServices` definieren
+1. Firewall-Regelwerk für PublicServices definieren
 2. feste Adress- und Namensstruktur für Matrix, Web und Mail festlegen
 3. Debian-Basishärtung abschließen
 4. Matrix-Serverkomponente installieren
