@@ -187,36 +187,17 @@ Diese Architektur schafft eine saubere Grundlage für:
 
 **Primärer Veröffentlichungsweg**
 
-Internet  
-↓  
-Öffentlicher Server 1  
-(IPv4/IPv6, WireGuard-Endpunkt, nur Portweiterleitung)  
-↓  
-WireGuard-Tunnel  
-↓  
-pfSense  
-(HAProxy / Firewall / Routing)  
-↓  
-DMZ / Server-Segment  
-↓  
-Proxmox VE  
-↓  
-Debian-VM  
-(Matrix-Serverkomponente + PostgreSQL)
+flowchart TB
+    Internet1[Internet] --> Public1[Public Server 1<br/>IPv4/IPv6<br/>WireGuard endpoint<br/>Port forwarding only]
+    Public1 --> WG[WireGuard Tunnel]
+    WG --> pfSense[pfSense<br/>HAProxy / Firewall / Routing]
+    pfSense --> DMZ[DMZ / Server Segment]
+    DMZ --> Proxmox[Proxmox VE]
+    Proxmox --> Debian[Debian VM<br/>Matrix server component + PostgreSQL]
 
-**Parallel dazu**
+    Internet2[Internet] --> Public2[Public Server 2<br/>Coturn / STUN / TURN]
 
-Internet  
-↓  
-Öffentlicher Server 2  
-(Coturn / STUN / TURN)
-
-**Optionale spätere Erweiterung**
-
-Internet  
-↓  
-Zusätzlicher oder aufgerüsteter öffentlicher Server  
-(SFU für größere Gruppen-Videocalls)
+    Internet3[Internet] --> SFU[Additional or upgraded public servers<br/>SFU for larger group video calls]
 
 ---
 
